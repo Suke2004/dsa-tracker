@@ -59,6 +59,10 @@
   .stat .lbl{font-size:10.5px; color:var(--text-muted); text-transform:uppercase; letter-spacing:.08em; margin-top:2px;}
   .stat.accent .val{color:var(--amber);}
 
+  .toolbar{display:flex; gap:8px; padding:10px clamp(16px,4vw,48px); border-bottom:1px solid var(--border); flex-wrap:wrap; align-items:center;}
+  .toolbar .spacer{flex:1;}
+  .toolbar small{color:var(--text-faint); font-size:11.5px;}
+
   /* ---------- layout ---------- */
   main{
     display:grid;
@@ -88,10 +92,22 @@
   .node{cursor:pointer;}
   .node:hover .node-circle{stroke:var(--teal);}
   .edge{stroke:var(--border); stroke-width:2;}
+  .pulse-ring{fill:none; stroke:var(--teal); stroke-width:2; opacity:.55; animation:pulse 1.8s ease-out infinite;}
+  @keyframes pulse{
+    0%{r:20; opacity:.55;}
+    100%{r:32; opacity:0;}
+  }
+  @media (prefers-reduced-motion: reduce){ .pulse-ring{animation:none; display:none;} }
 
   .legend{display:flex; gap:14px; flex-wrap:wrap; margin-top:14px; font-size:11.5px; color:var(--text-muted);}
   .legend span{display:inline-flex; align-items:center; gap:6px;}
   .dot{width:9px; height:9px; border-radius:50%; display:inline-block;}
+
+  .week-bars{margin-top:18px; display:flex; flex-direction:column; gap:8px;}
+  .week-bar-row{display:flex; align-items:center; gap:10px; font-size:11px; color:var(--text-muted); font-family:'IBM Plex Mono',monospace;}
+  .week-bar-row .label{width:52px; flex-shrink:0;}
+  .week-bar-track{flex:1; height:6px; background:var(--surface-2); border-radius:100px; overflow:hidden;}
+  .week-bar-fill{height:100%; background:var(--amber); border-radius:100px; transition:width .3s ease;}
 
   /* ---------- day panel ---------- */
   .day-panel{padding:24px clamp(16px,4vw,40px) 60px;}
@@ -116,13 +132,24 @@
   .check-row label{font-size:14.5px; cursor:pointer;}
   .check-row.done label{color:var(--text-muted); text-decoration:line-through;}
 
-  .prob-row{display:flex; align-items:center; gap:14px; padding:8px 0; flex-wrap:wrap;}
-  .prob-row label{font-size:14.5px; flex-shrink:0;}
-  .prob-row input[type=number]{
-    width:64px; background:var(--surface-2); border:1px solid var(--border); color:var(--text);
-    border-radius:6px; padding:6px 8px; font-family:'IBM Plex Mono',monospace; font-size:14px;
+  .problem-list{display:flex; flex-direction:column;}
+  .problem-row{
+    display:flex; align-items:center; gap:12px; padding:9px 0;
+    border-bottom:1px solid var(--surface-2);
   }
-  .prob-row .target{color:var(--text-faint); font-size:13px;}
+  .problem-row:last-child{border-bottom:none;}
+  .problem-row input[type=checkbox]{
+    width:19px; height:19px; accent-color:var(--amber); cursor:pointer; flex-shrink:0;
+  }
+  .problem-row .pname{font-size:14px; flex:1; cursor:pointer;}
+  .problem-row.done .pname{color:var(--text-muted); text-decoration:line-through;}
+  .problem-row .pidx{font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--text-faint); width:18px;}
+  .problem-row a.search-link{
+    font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--text-faint); text-decoration:none;
+    border:1px solid var(--border); padding:3px 8px; border-radius:6px; flex-shrink:0;
+  }
+  .problem-row a.search-link:hover{color:var(--teal); border-color:var(--teal);}
+  .empty-note{color:var(--text-faint); font-size:13px; font-style:italic;}
 
   textarea{
     width:100%; min-height:80px; background:var(--surface-2); border:1px solid var(--border);
@@ -130,7 +157,9 @@
     font-size:13.5px; resize:vertical;
   }
   textarea::placeholder{color:var(--text-faint);}
-  .card h4{font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--text-muted); margin-bottom:10px;}
+  .card h4{font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--text-muted); margin-bottom:10px;
+    display:flex; justify-content:space-between; align-items:center;}
+  .card h4 .count{color:var(--text-faint); font-weight:400; text-transform:none; letter-spacing:0;}
 
   .day-status{
     display:inline-flex; align-items:center; gap:7px; font-size:12.5px; padding:6px 12px;
@@ -139,7 +168,7 @@
   .day-status.pending{background:var(--surface-2); color:var(--text-muted); border:1px solid var(--border);}
   .day-status.complete{background:var(--amber-dim); color:var(--amber); border:1px solid var(--amber);}
 
-  .nav-buttons{display:flex; gap:10px; margin-top:20px;}
+  .nav-buttons{display:flex; gap:10px; margin-top:20px; flex-wrap:wrap;}
   button{
     font-family:'IBM Plex Mono',monospace; font-size:12.5px; letter-spacing:.03em;
     background:var(--surface-2); color:var(--text); border:1px solid var(--border);
@@ -150,6 +179,7 @@
   button.primary{background:var(--amber-dim); border-color:var(--amber); color:var(--amber);}
   button.primary:hover{background:var(--amber); color:#1a1305;}
   button.danger:hover{border-color:var(--red); color:var(--red);}
+  button.small{padding:6px 12px; font-size:11.5px;}
 
   /* ---------- reference (collapsible) ---------- */
   details{
@@ -165,11 +195,12 @@
   details summary::after{content:'+'; font-size:18px; color:var(--text-muted);}
   details[open] summary::after{content:'–';}
   details .inner{padding:0 20px 20px; color:var(--text-muted); font-size:13.5px; line-height:1.65;}
-  details .inner ul{padding-left:18px; margin-top:6px;}
+  details .inner ul, details .inner ol{padding-left:18px; margin-top:6px;}
   details .inner li{margin-bottom:6px;}
   details .inner strong{color:var(--text);}
 
   ::selection{background:var(--teal-dim); color:var(--text);}
+  #importFile{display:none;}
 </style>
 </head>
 <body>
@@ -178,7 +209,7 @@
   <div class="brand">
     <span class="eyebrow">// dsa · 30-day plan tracker</span>
     <h1>Traversal</h1>
-    <p>Each node below is a day. Visit them in order — the graph fills in as you go.</p>
+    <p>Each node is a day, each day has a named problem set. Visit them in order — the graph fills in as you go.</p>
   </div>
   <div class="stats">
     <div class="stat"><div class="val" id="statDone">0/30</div><div class="lbl">Days done</div></div>
@@ -187,6 +218,15 @@
     <div class="stat"><div class="val" id="statPct">0%</div><div class="lbl">Plan complete</div></div>
   </div>
 </header>
+
+<div class="toolbar">
+  <button id="jumpTodayBtn" class="small">Jump to current day</button>
+  <button id="exportBtn" class="small">Export progress (.json)</button>
+  <button id="importBtn" class="small">Import progress</button>
+  <input type="file" id="importFile" accept="application/json">
+  <div class="spacer"></div>
+  <small>Progress saves automatically in this browser. Export a backup before clearing browser data or switching devices.</small>
+</div>
 
 <main>
   <section class="graph-panel">
@@ -197,6 +237,7 @@
       <span><span class="dot" style="background:#56B6B2;"></span>Current</span>
       <span><span class="dot" style="background:#E3B341;"></span>Done</span>
     </div>
+    <div class="week-bars" id="weekBars"></div>
   </section>
 
   <section class="day-panel" id="dayPanel">
@@ -207,42 +248,42 @@
 <script>
 /* ---------------- plan data ---------------- */
 const PLAN = [
-  {w:1, topic:"Big-O + Python DS internals", task:"Write comparison notes: list vs dict vs set lookup/insert cost. No solving yet.", target:0},
-  {w:1, topic:"Arrays: traversal, two-pointer intro", task:"5 problems on basic array traversal and intro two-pointer setups.", target:5},
-  {w:1, topic:"Two pointers", task:"6 problems: opposite-end and same-direction two pointers (pair sum, container with most water).", target:6},
-  {w:1, topic:"Sliding window", task:"6 problems, fixed and variable window size.", target:6},
-  {w:1, topic:"Hashing (dict/set) + prefix sums", task:"6 problems on frequency counting and prefix sums.", target:6},
-  {w:1, topic:"Strings", task:"5 problems on basic string manipulation and hashing on strings.", target:5},
-  {w:1, topic:"Review — Week 1", task:"Re-solve 5 problems from this week WITHOUT looking at your old solution, timed.", target:5},
+  {w:1, topic:"Big-O + Python DS internals", task:"Write comparison notes: list vs dict vs set lookup/insert cost. No solving yet — this is a reading/notes day.", problems:[]},
+  {w:1, topic:"Arrays: traversal, two-pointer intro", task:"Basic array traversal and intro two-pointer setups.", problems:["Two Sum","Remove Duplicates from Sorted Array","Best Time to Buy and Sell Stock","Move Zeroes","Majority Element"]},
+  {w:1, topic:"Two pointers", task:"Opposite-end and same-direction two pointers.", problems:["Valid Palindrome","Two Sum II - Input Array Is Sorted","Container With Most Water","3Sum","Sort Colors","Reverse String"]},
+  {w:1, topic:"Sliding window", task:"Fixed and variable window size.", problems:["Maximum Average Subarray I","Longest Substring Without Repeating Characters","Minimum Size Subarray Sum","Longest Repeating Character Replacement","Permutation in String","Fruit Into Baskets"]},
+  {w:1, topic:"Hashing (dict/set) + prefix sums", task:"Frequency counting and prefix sums.", problems:["Contains Duplicate","Group Anagrams","Top K Frequent Elements","Subarray Sum Equals K","Longest Consecutive Sequence","Product of Array Except Self"]},
+  {w:1, topic:"Strings", task:"Basic string manipulation and hashing on strings.", problems:["Valid Anagram","Longest Common Prefix","Reverse Words in a String","String to Integer (atoi)","Palindromic Substrings"]},
+  {w:1, topic:"Review — Week 1", task:"Re-solve these WITHOUT looking at your old solution, timed.", problems:["Longest Substring Without Repeating Characters","Subarray Sum Equals K","3Sum","Group Anagrams","Container With Most Water"]},
 
-  {w:2, topic:"Recursion fundamentals", task:"4 problems: factorial, power, digit sum, fibonacci with/without memo. Draw the recursion tree on paper first.", target:4},
-  {w:2, topic:"Recursion on arrays/strings", task:"5 problems, intro to subsets and permutations.", target:5},
-  {w:2, topic:"Backtracking pattern", task:"5 problems: choose-explore-unchoose (subsets, permutations, combinations).", target:5},
-  {w:2, topic:"Backtracking, continued", task:"4 problems, N-Queens style / sudoku-lite constraints.", target:4},
-  {w:2, topic:"Linked lists: traversal, reversal", task:"6 problems, fast/slow pointer intro.", target:6},
-  {w:2, topic:"Linked lists: cycle + merge", task:"5 problems on cycle detection and merging two lists.", target:5},
-  {w:2, topic:"Review — Week 2", task:"Mixed re-solve + write your own cheat sheet: when backtracking vs two pointers.", target:5},
+  {w:2, topic:"Recursion fundamentals", task:"Draw the recursion tree on paper before coding each one.", problems:["Climbing Stairs","Pow(x, n)","Fibonacci Number","Sum of Digits (write it yourself, no LeetCode link)"]},
+  {w:2, topic:"Recursion on arrays/strings", task:"Intro to subsets and permutations via recursion.", problems:["Subsets","Permutations","Generate Parentheses","Letter Combinations of a Phone Number","Combination Sum"]},
+  {w:2, topic:"Backtracking pattern", task:"Choose–explore–unchoose.", problems:["Subsets II","Permutations II","Combinations","Palindrome Partitioning","Word Search"]},
+  {w:2, topic:"Backtracking, continued", task:"Constraint-heavy backtracking.", problems:["N-Queens","Sudoku Solver","Combination Sum II","Restore IP Addresses"]},
+  {w:2, topic:"Linked lists: traversal, reversal", task:"Fast/slow pointer intro.", problems:["Reverse Linked List","Middle of the Linked List","Remove Nth Node From End of List","Palindrome Linked List","Reorder List","Rotate List"]},
+  {w:2, topic:"Linked lists: cycle + merge", task:"Cycle detection and merging.", problems:["Linked List Cycle","Linked List Cycle II","Merge Two Sorted Lists","Merge k Sorted Lists","Copy List with Random Pointer"]},
+  {w:2, topic:"Review — Week 2", task:"Mixed re-solve + write your own cheat sheet: backtracking vs two pointers, when to use which.", problems:["Permutations","Word Search","N-Queens","Reverse Linked List","Merge k Sorted Lists"]},
 
-  {w:3, topic:"Binary trees: traversals", task:"5 problems, inorder/preorder/postorder, iterative and recursive.", target:5},
-  {w:3, topic:"BFS/DFS on trees", task:"5 problems, level order and depth-first variants.", target:5},
-  {w:3, topic:"Binary Search Trees", task:"4 problems: insert, search, validate BST.", target:4},
-  {w:3, topic:"Graphs: representation + BFS/DFS", task:"5 problems, adjacency list, BFS/DFS on graphs.", target:5},
-  {w:3, topic:"Graph patterns", task:"5 problems: topological sort, cycle detection, number of islands.", target:5},
-  {w:3, topic:"Binary search", task:"6 problems, classic binary search + binary search on the answer.", target:6},
-  {w:3, topic:"Review — Week 3", task:"Pick 2 hardest problems from the week and re-derive them from scratch.", target:2},
+  {w:3, topic:"Binary trees: traversals", task:"Iterative and recursive.", problems:["Binary Tree Inorder Traversal","Binary Tree Preorder Traversal","Binary Tree Postorder Traversal","Maximum Depth of Binary Tree","Same Tree"]},
+  {w:3, topic:"BFS/DFS on trees", task:"Level order and depth-first variants.", problems:["Binary Tree Level Order Traversal","Binary Tree Zigzag Level Order Traversal","Diameter of Binary Tree","Path Sum","Lowest Common Ancestor of a Binary Tree"]},
+  {w:3, topic:"Binary Search Trees", task:"Insert, search, validate.", problems:["Validate Binary Search Tree","Insert into a Binary Search Tree","Search in a Binary Search Tree","Kth Smallest Element in a BST"]},
+  {w:3, topic:"Graphs: representation + BFS/DFS", task:"Adjacency list, BFS/DFS on graphs.", problems:["Number of Islands","Flood Fill","Clone Graph","Find if Path Exists in Graph","Max Area of Island"]},
+  {w:3, topic:"Graph patterns", task:"Topological sort — you already know this from your DAG scheduling work. Cycle detection, multi-source BFS.", problems:["Course Schedule","Course Schedule II","Number of Connected Components in an Undirected Graph","Rotting Oranges","Pacific Atlantic Water Flow"]},
+  {w:3, topic:"Binary search", task:"Classic binary search + binary search on the answer.", problems:["Binary Search","Search in Rotated Sorted Array","Find Minimum in Rotated Sorted Array","Koko Eating Bananas","Capacity To Ship Packages Within D Days","Find First and Last Position of Element in Sorted Array"]},
+  {w:3, topic:"Review — Week 3", task:"Re-derive these from scratch — no peeking at your old code.", problems:["Course Schedule","Search in Rotated Sorted Array"]},
 
-  {w:4, topic:"DP intro (1D)", task:"5 problems: climbing stairs, house robber, fibonacci-style.", target:5},
-  {w:4, topic:"DP on strings", task:"4 problems: LCS, intro to edit distance.", target:4},
-  {w:4, topic:"Knapsack pattern", task:"4 problems: 0/1 knapsack, subset sum.", target:4},
-  {w:4, topic:"Stacks (monotonic pattern)", task:"5 problems: valid parentheses, next greater element.", target:5},
-  {w:4, topic:"Heaps / priority queues", task:"5 problems: kth largest, top-k patterns.", target:5},
-  {w:4, topic:"Mixed timed set", task:"4 problems, 30 min each — simulate interview conditions.", target:4},
-  {w:4, topic:"Mixed timed set, round 2", task:"4 more problems, different topics than yesterday.", target:4},
-  {w:4, topic:"Full mock interview", task:"2 problems in 45 minutes. No notes, no hints. Review after.", target:2},
-  {w:4, topic:"Full retrospective", task:"Revisit your single weakest pattern from the month — 5 problems on just that.", target:5},
+  {w:4, topic:"DP intro (1D)", task:"Recursion + memoization, formalized.", problems:["Climbing Stairs (DP version)","House Robber","House Robber II","Min Cost Climbing Stairs","Maximum Subarray (Kadane's)"]},
+  {w:4, topic:"DP on strings", task:"Two-pointer DP tables.", problems:["Longest Common Subsequence","Edit Distance","Longest Palindromic Substring","Is Subsequence"]},
+  {w:4, topic:"Knapsack pattern", task:"0/1 knapsack family.", problems:["Partition Equal Subset Sum","Target Sum","Coin Change","Coin Change II"]},
+  {w:4, topic:"Stacks (monotonic pattern)", task:"Monotonic stack for next-greater style problems.", problems:["Valid Parentheses","Min Stack","Daily Temperatures","Next Greater Element I","Largest Rectangle in Histogram"]},
+  {w:4, topic:"Heaps / priority queues", task:"Top-k and streaming median patterns.", problems:["Kth Largest Element in an Array","Last Stone Weight","K Closest Points to Origin","Task Scheduler","Find Median from Data Stream"]},
+  {w:4, topic:"Mixed timed set", task:"30 min each — simulate interview conditions.", problems:["3Sum Closest","Subarray Product Less Than K","Word Break","Jump Game"]},
+  {w:4, topic:"Mixed timed set, round 2", task:"Different topics than yesterday, same time pressure.", problems:["Jump Game II","Unique Paths","Minimum Path Sum","Longest Increasing Subsequence"]},
+  {w:4, topic:"Full mock interview", task:"45 minutes total, no notes, no hints. Review afterward.", problems:["Trapping Rain Water","Merge Intervals"]},
+  {w:4, topic:"Full retrospective", task:"Suggested wildcard set spanning the month's patterns — swap any of these for your actual weakest pattern.", problems:["Course Schedule II","Sliding Window Maximum","Word Break","Longest Increasing Subsequence","Trapping Rain Water"]},
 ];
 
-const STORAGE_KEY = "dsa-tracker-v1";
+const STORAGE_KEY = "dsa-tracker-v2";
 
 /* ---------------- state ---------------- */
 function loadState(){
@@ -256,13 +297,19 @@ function saveState(){
   try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){}
 }
 function dayState(i){
-  if(!state[i]) state[i] = {concept:false, solved:0, mistakes:false, notes:""};
+  const n = PLAN[i].problems.length;
+  if(!state[i]) state[i] = {concept:false, mistakes:false, notes:"", checked:new Array(n).fill(false)};
+  if(!state[i].checked || state[i].checked.length !== n){
+    const old = state[i].checked || [];
+    state[i].checked = new Array(n).fill(false).map((v,idx)=> old[idx] || false);
+  }
   return state[i];
 }
+function solvedCount(i){ return dayState(i).checked.filter(Boolean).length; }
 function isComplete(i){
   const d = dayState(i);
-  const target = PLAN[i].target;
-  return d.concept && (target === 0 || d.solved >= target);
+  const n = PLAN[i].problems.length;
+  return d.concept && (n === 0 || d.checked.every(Boolean));
 }
 function firstIncomplete(){
   for(let i=0;i<30;i++) if(!isComplete(i)) return i;
@@ -275,7 +322,7 @@ let selected = firstIncomplete();
 /* ---------------- graph rendering ---------------- */
 const svgNS = "http://www.w3.org/2000/svg";
 const graphEl = document.getElementById('graph');
-const COLS = 5, ROWS = 6, R = 20, XPAD = 50, YPAD = 50, XGAP = 75, YGAP = 100;
+const COLS = 5, XPAD = 50, YPAD = 50, XGAP = 75, YGAP = 100;
 
 function nodePos(i){
   const row = Math.floor(i/COLS);
@@ -288,7 +335,6 @@ function renderGraph(){
   graphEl.innerHTML = "";
   const current = firstIncomplete();
 
-  // edges first (so nodes sit on top)
   for(let i=0;i<29;i++){
     const a = nodePos(i), b = nodePos(i+1);
     const line = document.createElementNS(svgNS,'line');
@@ -306,8 +352,15 @@ function renderGraph(){
     g.setAttribute('transform', `translate(${p.x},${p.y})`);
     g.addEventListener('click', () => { selected = i; renderAll(); });
 
+    if(i === current){
+      const ring = document.createElementNS(svgNS,'circle');
+      ring.setAttribute('class','pulse-ring');
+      ring.setAttribute('r', 20);
+      g.appendChild(ring);
+    }
+
     const circle = document.createElementNS(svgNS,'circle');
-    circle.setAttribute('r', R);
+    circle.setAttribute('r', 20);
     circle.setAttribute('class','node-circle');
     let fill = '#1C232C', stroke = '#2A323C';
     if(isComplete(i)){ fill = '#E3B341'; stroke = '#E3B341'; }
@@ -329,14 +382,51 @@ function renderGraph(){
   }
 }
 
+function renderWeekBars(){
+  const el = document.getElementById('weekBars');
+  el.innerHTML = "";
+  for(let w=1; w<=4; w++){
+    const idxs = [];
+    PLAN.forEach((p,i)=>{ if(p.w===w) idxs.push(i); });
+    const done = idxs.filter(isComplete).length;
+    const pct = Math.round((done/idxs.length)*100);
+    const row = document.createElement('div');
+    row.className = 'week-bar-row';
+    row.innerHTML = `<span class="label">Week ${w}</span>
+      <span class="week-bar-track"><span class="week-bar-fill" style="width:${pct}%"></span></span>
+      <span>${done}/${idxs.length}</span>`;
+    el.appendChild(row);
+  }
+}
+
 /* ---------------- day panel rendering ---------------- */
 const dayPanel = document.getElementById('dayPanel');
+
+function leetSearchUrl(name){
+  const clean = name.replace(/\(.*?\)/g,'').trim();
+  return `https://leetcode.com/problemset/?search=${encodeURIComponent(clean)}`;
+}
 
 function renderDay(){
   const i = selected;
   const p = PLAN[i];
   const d = dayState(i);
   const complete = isComplete(i);
+  const solved = solvedCount(i);
+
+  let problemsHtml = '';
+  if(p.problems.length === 0){
+    problemsHtml = `<p class="empty-note">No problems today — this is a notes/reading day.</p>`;
+  } else {
+    problemsHtml = `<div class="problem-list">` + p.problems.map((name, idx) => `
+      <div class="problem-row ${d.checked[idx] ? 'done':''}">
+        <input type="checkbox" data-idx="${idx}" class="probChk" ${d.checked[idx]?'checked':''}>
+        <span class="pidx">${idx+1}.</span>
+        <label class="pname">${escapeHtml(name)}</label>
+        <a class="search-link" href="${leetSearchUrl(name)}" target="_blank" rel="noopener">search ↗</a>
+      </div>
+    `).join('') + `</div>`;
+  }
 
   dayPanel.innerHTML = `
     <div class="day-status ${complete ? 'complete':'pending'}">${complete ? '✓ complete' : '○ in progress'}</div>
@@ -348,16 +438,20 @@ function renderDay(){
     <p class="task-line">${p.task}</p>
 
     <div class="card">
-      <h4>Checklist</h4>
+      <h4>Concept</h4>
       <div class="check-row ${d.concept?'done':''}">
         <input type="checkbox" id="chkConcept" ${d.concept?'checked':''}>
         <label for="chkConcept">Studied the concept / pattern for today</label>
       </div>
-      <div class="prob-row">
-        <label for="numSolved">Problems solved</label>
-        <input type="number" id="numSolved" min="0" value="${d.solved}">
-        <span class="target">/ target ${p.target}</span>
-      </div>
+    </div>
+
+    <div class="card">
+      <h4>Problems <span class="count">${solved}/${p.problems.length} solved</span></h4>
+      ${problemsHtml}
+    </div>
+
+    <div class="card">
+      <h4>Habit check</h4>
       <div class="check-row ${d.mistakes?'done':''}">
         <input type="checkbox" id="chkMistakes" ${d.mistakes?'checked':''}>
         <label for="chkMistakes">Logged mistakes / pattern name for anything I got wrong</label>
@@ -372,6 +466,7 @@ function renderDay(){
     <div class="nav-buttons">
       <button id="prevBtn" ${i===0?'disabled':''}>&larr; Previous day</button>
       <button id="nextBtn" ${i===29?'disabled':''}>Next day &rarr;</button>
+      <button id="resetDayBtn">Reset this day</button>
       <button id="resetBtn" class="danger" style="margin-left:auto;">Reset all progress</button>
     </div>
 
@@ -413,8 +508,11 @@ function renderDay(){
   document.getElementById('chkConcept').addEventListener('change', e => {
     d.concept = e.target.checked; saveState(); renderAll();
   });
-  document.getElementById('numSolved').addEventListener('input', e => {
-    d.solved = Math.max(0, parseInt(e.target.value || 0, 10)); saveState(); renderAll();
+  document.querySelectorAll('.probChk').forEach(cb => {
+    cb.addEventListener('change', e => {
+      const idx = parseInt(e.target.getAttribute('data-idx'),10);
+      d.checked[idx] = e.target.checked; saveState(); renderAll();
+    });
   });
   document.getElementById('chkMistakes').addEventListener('change', e => {
     d.mistakes = e.target.checked; saveState(); renderAll();
@@ -424,6 +522,13 @@ function renderDay(){
   });
   document.getElementById('prevBtn').addEventListener('click', () => { if(selected>0){ selected--; renderAll(); }});
   document.getElementById('nextBtn').addEventListener('click', () => { if(selected<29){ selected++; renderAll(); }});
+  document.getElementById('resetDayBtn').addEventListener('click', () => {
+    if(confirm(`Reset Day ${i+1} only?`)){
+      const n = PLAN[i].problems.length;
+      state[i] = {concept:false, mistakes:false, notes:"", checked:new Array(n).fill(false)};
+      saveState(); renderAll();
+    }
+  });
   document.getElementById('resetBtn').addEventListener('click', () => {
     if(confirm('Reset all 30 days of progress? This cannot be undone.')){
       state = {}; saveState(); selected = 0; renderAll();
@@ -440,7 +545,7 @@ function renderStats(){
   let done = 0, problems = 0, streak = 0;
   for(let i=0;i<30;i++){
     if(isComplete(i)) done++;
-    problems += dayState(i).solved;
+    problems += solvedCount(i);
   }
   for(let i=0;i<30;i++){
     if(isComplete(i)) streak++; else break;
@@ -455,7 +560,50 @@ function renderAll(){
   renderGraph();
   renderDay();
   renderStats();
+  renderWeekBars();
 }
+
+/* ---------------- toolbar: export / import / jump ---------------- */
+document.getElementById('jumpTodayBtn').addEventListener('click', () => {
+  selected = firstIncomplete(); renderAll();
+});
+document.getElementById('exportBtn').addEventListener('click', () => {
+  const blob = new Blob([JSON.stringify(state, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'dsa-tracker-progress.json';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+});
+document.getElementById('importBtn').addEventListener('click', () => {
+  document.getElementById('importFile').click();
+});
+document.getElementById('importFile').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = evt => {
+    try{
+      const parsed = JSON.parse(evt.target.result);
+      state = parsed || {};
+      saveState();
+      selected = firstIncomplete();
+      renderAll();
+      alert('Progress imported.');
+    }catch(err){
+      alert('Could not read that file — make sure it\'s a progress export from this tracker.');
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+});
+
+/* ---------------- keyboard navigation ---------------- */
+document.addEventListener('keydown', e => {
+  if(e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT') return;
+  if(e.key === 'ArrowRight' && selected < 29){ selected++; renderAll(); }
+  if(e.key === 'ArrowLeft' && selected > 0){ selected--; renderAll(); }
+});
 
 renderAll();
 </script>
