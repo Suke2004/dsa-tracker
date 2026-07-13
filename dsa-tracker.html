@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Traversal — 30-Day DSA Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0F1419;
+    --surface:#161B22;
+    --surface-2:#1C232C;
+    --border:#2A323C;
+    --text:#E6EDF3;
+    --text-muted:#8B98A5;
+    --text-faint:#5B6773;
+    --teal:#56B6B2;
+    --teal-dim:#2C4341;
+    --amber:#E3B341;
+    --amber-dim:#3A3220;
+    --red:#D16B6B;
+    --radius:10px;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:'IBM Plex Sans', sans-serif;
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+  }
+  code,.mono{font-family:'IBM Plex Mono', monospace;}
+
+  /* ---------- header ---------- */
+  header{
+    padding:28px clamp(16px,4vw,48px) 20px;
+    border-bottom:1px solid var(--border);
+    display:flex; flex-wrap:wrap; gap:20px;
+    align-items:flex-end; justify-content:space-between;
+  }
+  .brand{display:flex; flex-direction:column; gap:4px;}
+  .brand .eyebrow{
+    font-family:'IBM Plex Mono', monospace; font-size:11px; letter-spacing:.18em;
+    color:var(--teal); text-transform:uppercase;
+  }
+  .brand h1{
+    font-family:'IBM Plex Mono', monospace; font-size:clamp(22px,3vw,30px);
+    font-weight:600; letter-spacing:-.01em;
+  }
+  .brand p{color:var(--text-muted); font-size:13.5px; max-width:44ch;}
+
+  .stats{display:flex; gap:10px; flex-wrap:wrap;}
+  .stat{
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+    padding:10px 16px; min-width:104px;
+  }
+  .stat .val{font-family:'IBM Plex Mono',monospace; font-size:22px; font-weight:600; color:var(--text);}
+  .stat .lbl{font-size:10.5px; color:var(--text-muted); text-transform:uppercase; letter-spacing:.08em; margin-top:2px;}
+  .stat.accent .val{color:var(--amber);}
+
+  /* ---------- layout ---------- */
+  main{
+    display:grid;
+    grid-template-columns:minmax(280px,360px) 1fr;
+    gap:0;
+    align-items:start;
+  }
+  @media (max-width:860px){
+    main{grid-template-columns:1fr;}
+  }
+
+  /* ---------- graph panel ---------- */
+  .graph-panel{
+    border-right:1px solid var(--border);
+    padding:20px;
+    position:sticky; top:0;
+  }
+  @media (max-width:860px){ .graph-panel{position:static; border-right:none; border-bottom:1px solid var(--border);} }
+
+  .graph-panel h2{
+    font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:.1em;
+    color:var(--text-muted); text-transform:uppercase; margin-bottom:10px;
+  }
+  #graph{width:100%; height:auto; display:block;}
+  .node-circle{transition:fill .25s ease, stroke .25s ease;}
+  .node text{font-family:'IBM Plex Mono',monospace; font-size:13px; font-weight:600; pointer-events:none;}
+  .node{cursor:pointer;}
+  .node:hover .node-circle{stroke:var(--teal);}
+  .edge{stroke:var(--border); stroke-width:2;}
+
+  .legend{display:flex; gap:14px; flex-wrap:wrap; margin-top:14px; font-size:11.5px; color:var(--text-muted);}
+  .legend span{display:inline-flex; align-items:center; gap:6px;}
+  .dot{width:9px; height:9px; border-radius:50%; display:inline-block;}
+
+  /* ---------- day panel ---------- */
+  .day-panel{padding:24px clamp(16px,4vw,40px) 60px;}
+  .day-head{display:flex; align-items:baseline; gap:14px; flex-wrap:wrap; margin-bottom:6px;}
+  .day-head .num{font-family:'IBM Plex Mono',monospace; font-size:34px; font-weight:700; color:var(--amber);}
+  .day-head .week{
+    font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.1em; text-transform:uppercase;
+    color:var(--teal); border:1px solid var(--teal-dim); background:var(--teal-dim);
+    padding:4px 9px; border-radius:100px;
+  }
+  .day-head h3{font-size:20px; font-weight:600; flex-basis:100%;}
+  .day-panel .task-line{color:var(--text-muted); font-size:14px; margin-bottom:22px;}
+
+  .card{
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+    padding:18px 20px; margin-bottom:14px;
+  }
+  .check-row{display:flex; align-items:center; gap:12px; padding:8px 0;}
+  .check-row input[type=checkbox]{
+    width:20px; height:20px; accent-color:var(--amber); cursor:pointer; flex-shrink:0;
+  }
+  .check-row label{font-size:14.5px; cursor:pointer;}
+  .check-row.done label{color:var(--text-muted); text-decoration:line-through;}
+
+  .prob-row{display:flex; align-items:center; gap:14px; padding:8px 0; flex-wrap:wrap;}
+  .prob-row label{font-size:14.5px; flex-shrink:0;}
+  .prob-row input[type=number]{
+    width:64px; background:var(--surface-2); border:1px solid var(--border); color:var(--text);
+    border-radius:6px; padding:6px 8px; font-family:'IBM Plex Mono',monospace; font-size:14px;
+  }
+  .prob-row .target{color:var(--text-faint); font-size:13px;}
+
+  textarea{
+    width:100%; min-height:80px; background:var(--surface-2); border:1px solid var(--border);
+    color:var(--text); border-radius:8px; padding:10px 12px; font-family:'IBM Plex Sans',sans-serif;
+    font-size:13.5px; resize:vertical;
+  }
+  textarea::placeholder{color:var(--text-faint);}
+  .card h4{font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--text-muted); margin-bottom:10px;}
+
+  .day-status{
+    display:inline-flex; align-items:center; gap:7px; font-size:12.5px; padding:6px 12px;
+    border-radius:100px; margin-bottom:18px; font-family:'IBM Plex Mono',monospace;
+  }
+  .day-status.pending{background:var(--surface-2); color:var(--text-muted); border:1px solid var(--border);}
+  .day-status.complete{background:var(--amber-dim); color:var(--amber); border:1px solid var(--amber);}
+
+  .nav-buttons{display:flex; gap:10px; margin-top:20px;}
+  button{
+    font-family:'IBM Plex Mono',monospace; font-size:12.5px; letter-spacing:.03em;
+    background:var(--surface-2); color:var(--text); border:1px solid var(--border);
+    border-radius:7px; padding:9px 16px; cursor:pointer; transition:all .15s ease;
+  }
+  button:hover{border-color:var(--teal); color:var(--teal);}
+  button:disabled{opacity:.35; cursor:not-allowed;}
+  button.primary{background:var(--amber-dim); border-color:var(--amber); color:var(--amber);}
+  button.primary:hover{background:var(--amber); color:#1a1305;}
+  button.danger:hover{border-color:var(--red); color:var(--red);}
+
+  /* ---------- reference (collapsible) ---------- */
+  details{
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+    margin-top:26px; padding:0;
+  }
+  details summary{
+    padding:16px 20px; cursor:pointer; font-family:'IBM Plex Mono',monospace;
+    font-size:12.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--teal);
+    list-style:none; display:flex; justify-content:space-between; align-items:center;
+  }
+  details summary::-webkit-details-marker{display:none;}
+  details summary::after{content:'+'; font-size:18px; color:var(--text-muted);}
+  details[open] summary::after{content:'–';}
+  details .inner{padding:0 20px 20px; color:var(--text-muted); font-size:13.5px; line-height:1.65;}
+  details .inner ul{padding-left:18px; margin-top:6px;}
+  details .inner li{margin-bottom:6px;}
+  details .inner strong{color:var(--text);}
+
+  ::selection{background:var(--teal-dim); color:var(--text);}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <span class="eyebrow">// dsa · 30-day plan tracker</span>
+    <h1>Traversal</h1>
+    <p>Each node below is a day. Visit them in order — the graph fills in as you go.</p>
+  </div>
+  <div class="stats">
+    <div class="stat"><div class="val" id="statDone">0/30</div><div class="lbl">Days done</div></div>
+    <div class="stat"><div class="val" id="statStreak">0</div><div class="lbl">Streak</div></div>
+    <div class="stat accent"><div class="val" id="statProblems">0</div><div class="lbl">Problems solved</div></div>
+    <div class="stat"><div class="val" id="statPct">0%</div><div class="lbl">Plan complete</div></div>
+  </div>
+</header>
+
+<main>
+  <section class="graph-panel">
+    <h2>Path (click a node)</h2>
+    <svg id="graph" viewBox="0 0 380 660"></svg>
+    <div class="legend">
+      <span><span class="dot" style="background:#2A323C;"></span>Not started</span>
+      <span><span class="dot" style="background:#56B6B2;"></span>Current</span>
+      <span><span class="dot" style="background:#E3B341;"></span>Done</span>
+    </div>
+  </section>
+
+  <section class="day-panel" id="dayPanel">
+    <!-- populated by JS -->
+  </section>
+</main>
+
+<script>
+/* ---------------- plan data ---------------- */
+const PLAN = [
+  {w:1, topic:"Big-O + Python DS internals", task:"Write comparison notes: list vs dict vs set lookup/insert cost. No solving yet.", target:0},
+  {w:1, topic:"Arrays: traversal, two-pointer intro", task:"5 problems on basic array traversal and intro two-pointer setups.", target:5},
+  {w:1, topic:"Two pointers", task:"6 problems: opposite-end and same-direction two pointers (pair sum, container with most water).", target:6},
+  {w:1, topic:"Sliding window", task:"6 problems, fixed and variable window size.", target:6},
+  {w:1, topic:"Hashing (dict/set) + prefix sums", task:"6 problems on frequency counting and prefix sums.", target:6},
+  {w:1, topic:"Strings", task:"5 problems on basic string manipulation and hashing on strings.", target:5},
+  {w:1, topic:"Review — Week 1", task:"Re-solve 5 problems from this week WITHOUT looking at your old solution, timed.", target:5},
+
+  {w:2, topic:"Recursion fundamentals", task:"4 problems: factorial, power, digit sum, fibonacci with/without memo. Draw the recursion tree on paper first.", target:4},
+  {w:2, topic:"Recursion on arrays/strings", task:"5 problems, intro to subsets and permutations.", target:5},
+  {w:2, topic:"Backtracking pattern", task:"5 problems: choose-explore-unchoose (subsets, permutations, combinations).", target:5},
+  {w:2, topic:"Backtracking, continued", task:"4 problems, N-Queens style / sudoku-lite constraints.", target:4},
+  {w:2, topic:"Linked lists: traversal, reversal", task:"6 problems, fast/slow pointer intro.", target:6},
+  {w:2, topic:"Linked lists: cycle + merge", task:"5 problems on cycle detection and merging two lists.", target:5},
+  {w:2, topic:"Review — Week 2", task:"Mixed re-solve + write your own cheat sheet: when backtracking vs two pointers.", target:5},
+
+  {w:3, topic:"Binary trees: traversals", task:"5 problems, inorder/preorder/postorder, iterative and recursive.", target:5},
+  {w:3, topic:"BFS/DFS on trees", task:"5 problems, level order and depth-first variants.", target:5},
+  {w:3, topic:"Binary Search Trees", task:"4 problems: insert, search, validate BST.", target:4},
+  {w:3, topic:"Graphs: representation + BFS/DFS", task:"5 problems, adjacency list, BFS/DFS on graphs.", target:5},
+  {w:3, topic:"Graph patterns", task:"5 problems: topological sort, cycle detection, number of islands.", target:5},
+  {w:3, topic:"Binary search", task:"6 problems, classic binary search + binary search on the answer.", target:6},
+  {w:3, topic:"Review — Week 3", task:"Pick 2 hardest problems from the week and re-derive them from scratch.", target:2},
+
+  {w:4, topic:"DP intro (1D)", task:"5 problems: climbing stairs, house robber, fibonacci-style.", target:5},
+  {w:4, topic:"DP on strings", task:"4 problems: LCS, intro to edit distance.", target:4},
+  {w:4, topic:"Knapsack pattern", task:"4 problems: 0/1 knapsack, subset sum.", target:4},
+  {w:4, topic:"Stacks (monotonic pattern)", task:"5 problems: valid parentheses, next greater element.", target:5},
+  {w:4, topic:"Heaps / priority queues", task:"5 problems: kth largest, top-k patterns.", target:5},
+  {w:4, topic:"Mixed timed set", task:"4 problems, 30 min each — simulate interview conditions.", target:4},
+  {w:4, topic:"Mixed timed set, round 2", task:"4 more problems, different topics than yesterday.", target:4},
+  {w:4, topic:"Full mock interview", task:"2 problems in 45 minutes. No notes, no hints. Review after.", target:2},
+  {w:4, topic:"Full retrospective", task:"Revisit your single weakest pattern from the month — 5 problems on just that.", target:5},
+];
+
+const STORAGE_KEY = "dsa-tracker-v1";
+
+/* ---------------- state ---------------- */
+function loadState(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw) return JSON.parse(raw);
+  }catch(e){}
+  return {};
+}
+function saveState(){
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){}
+}
+function dayState(i){
+  if(!state[i]) state[i] = {concept:false, solved:0, mistakes:false, notes:""};
+  return state[i];
+}
+function isComplete(i){
+  const d = dayState(i);
+  const target = PLAN[i].target;
+  return d.concept && (target === 0 || d.solved >= target);
+}
+function firstIncomplete(){
+  for(let i=0;i<30;i++) if(!isComplete(i)) return i;
+  return 29;
+}
+
+let state = loadState();
+let selected = firstIncomplete();
+
+/* ---------------- graph rendering ---------------- */
+const svgNS = "http://www.w3.org/2000/svg";
+const graphEl = document.getElementById('graph');
+const COLS = 5, ROWS = 6, R = 20, XPAD = 50, YPAD = 50, XGAP = 75, YGAP = 100;
+
+function nodePos(i){
+  const row = Math.floor(i/COLS);
+  let col = i % COLS;
+  if(row % 2 === 1) col = COLS - 1 - col; // snake layout
+  return { x: XPAD + col*XGAP, y: YPAD + row*YGAP };
+}
+
+function renderGraph(){
+  graphEl.innerHTML = "";
+  const current = firstIncomplete();
+
+  // edges first (so nodes sit on top)
+  for(let i=0;i<29;i++){
+    const a = nodePos(i), b = nodePos(i+1);
+    const line = document.createElementNS(svgNS,'line');
+    line.setAttribute('x1', a.x); line.setAttribute('y1', a.y);
+    line.setAttribute('x2', b.x); line.setAttribute('y2', b.y);
+    line.setAttribute('class','edge');
+    if(isComplete(i) && isComplete(i+1)) line.setAttribute('stroke', '#E3B341');
+    graphEl.appendChild(line);
+  }
+
+  for(let i=0;i<30;i++){
+    const p = nodePos(i);
+    const g = document.createElementNS(svgNS,'g');
+    g.setAttribute('class','node');
+    g.setAttribute('transform', `translate(${p.x},${p.y})`);
+    g.addEventListener('click', () => { selected = i; renderAll(); });
+
+    const circle = document.createElementNS(svgNS,'circle');
+    circle.setAttribute('r', R);
+    circle.setAttribute('class','node-circle');
+    let fill = '#1C232C', stroke = '#2A323C';
+    if(isComplete(i)){ fill = '#E3B341'; stroke = '#E3B341'; }
+    else if(i === current){ fill = '#1C232C'; stroke = '#56B6B2'; }
+    if(i === selected){ stroke = '#E6EDF3'; }
+    circle.setAttribute('fill', fill);
+    circle.setAttribute('stroke', stroke);
+    circle.setAttribute('stroke-width', i===selected ? 3 : 2);
+    g.appendChild(circle);
+
+    const text = document.createElementNS(svgNS,'text');
+    text.setAttribute('text-anchor','middle');
+    text.setAttribute('dy','5');
+    text.setAttribute('fill', isComplete(i) ? '#1a1305' : (i===current ? '#56B6B2' : '#8B98A5'));
+    text.textContent = i+1;
+    g.appendChild(text);
+
+    graphEl.appendChild(g);
+  }
+}
+
+/* ---------------- day panel rendering ---------------- */
+const dayPanel = document.getElementById('dayPanel');
+
+function renderDay(){
+  const i = selected;
+  const p = PLAN[i];
+  const d = dayState(i);
+  const complete = isComplete(i);
+
+  dayPanel.innerHTML = `
+    <div class="day-status ${complete ? 'complete':'pending'}">${complete ? '✓ complete' : '○ in progress'}</div>
+    <div class="day-head">
+      <span class="num">${String(i+1).padStart(2,'0')}</span>
+      <span class="week">Week ${p.w}</span>
+      <h3>${p.topic}</h3>
+    </div>
+    <p class="task-line">${p.task}</p>
+
+    <div class="card">
+      <h4>Checklist</h4>
+      <div class="check-row ${d.concept?'done':''}">
+        <input type="checkbox" id="chkConcept" ${d.concept?'checked':''}>
+        <label for="chkConcept">Studied the concept / pattern for today</label>
+      </div>
+      <div class="prob-row">
+        <label for="numSolved">Problems solved</label>
+        <input type="number" id="numSolved" min="0" value="${d.solved}">
+        <span class="target">/ target ${p.target}</span>
+      </div>
+      <div class="check-row ${d.mistakes?'done':''}">
+        <input type="checkbox" id="chkMistakes" ${d.mistakes?'checked':''}>
+        <label for="chkMistakes">Logged mistakes / pattern name for anything I got wrong</label>
+      </div>
+    </div>
+
+    <div class="card">
+      <h4>Notes</h4>
+      <textarea id="notesArea" placeholder="What pattern was this? What tripped you up? One or two lines is enough.">${escapeHtml(d.notes)}</textarea>
+    </div>
+
+    <div class="nav-buttons">
+      <button id="prevBtn" ${i===0?'disabled':''}>&larr; Previous day</button>
+      <button id="nextBtn" ${i===29?'disabled':''}>Next day &rarr;</button>
+      <button id="resetBtn" class="danger" style="margin-left:auto;">Reset all progress</button>
+    </div>
+
+    <details>
+      <summary>How to work each problem</summary>
+      <div class="inner">
+        <ol>
+          <li><strong>Restate the problem</strong> in your own words before touching code.</li>
+          <li><strong>Say the brute force out loud</strong> first, even if it's slow.</li>
+          <li><strong>Ask what's being recomputed</strong> — that's usually where the optimization hides.</li>
+          <li><strong>Plan on paper before coding.</strong> Coding-first without a plan keeps you stuck at "beginner."</li>
+          <li>Stuck 25–30 min? Look at <strong>one hint</strong>, understand the idea, close it, re-implement yourself.</li>
+          <li><strong>Note the pattern name</strong> in your notes above — this is what actually builds recall.</li>
+        </ol>
+      </div>
+    </details>
+
+    <details>
+      <summary>Do / Don't</summary>
+      <div class="inner">
+        <strong>Do</strong>
+        <ul>
+          <li>Show up daily, even 45 min, over weekend binges.</li>
+          <li>Time yourself from Week 2 onward.</li>
+          <li>Write your own brute force first, always.</li>
+          <li>Re-solve old problems cold after a few days.</li>
+        </ul>
+        <strong>Don't</strong>
+        <ul>
+          <li>Jump to the editorial before real struggle.</li>
+          <li>Binge solution videos for topics you haven't attempted.</li>
+          <li>Skip "easy" problems — that's where the reflex gets built.</li>
+          <li>Memorize code instead of the reasoning trigger.</li>
+        </ul>
+      </div>
+    </details>
+  `;
+
+  document.getElementById('chkConcept').addEventListener('change', e => {
+    d.concept = e.target.checked; saveState(); renderAll();
+  });
+  document.getElementById('numSolved').addEventListener('input', e => {
+    d.solved = Math.max(0, parseInt(e.target.value || 0, 10)); saveState(); renderAll();
+  });
+  document.getElementById('chkMistakes').addEventListener('change', e => {
+    d.mistakes = e.target.checked; saveState(); renderAll();
+  });
+  document.getElementById('notesArea').addEventListener('input', e => {
+    d.notes = e.target.value; saveState();
+  });
+  document.getElementById('prevBtn').addEventListener('click', () => { if(selected>0){ selected--; renderAll(); }});
+  document.getElementById('nextBtn').addEventListener('click', () => { if(selected<29){ selected++; renderAll(); }});
+  document.getElementById('resetBtn').addEventListener('click', () => {
+    if(confirm('Reset all 30 days of progress? This cannot be undone.')){
+      state = {}; saveState(); selected = 0; renderAll();
+    }
+  });
+}
+
+function escapeHtml(s){
+  return (s||"").replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+/* ---------------- stats ---------------- */
+function renderStats(){
+  let done = 0, problems = 0, streak = 0;
+  for(let i=0;i<30;i++){
+    if(isComplete(i)) done++;
+    problems += dayState(i).solved;
+  }
+  for(let i=0;i<30;i++){
+    if(isComplete(i)) streak++; else break;
+  }
+  document.getElementById('statDone').textContent = `${done}/30`;
+  document.getElementById('statStreak').textContent = streak;
+  document.getElementById('statProblems').textContent = problems;
+  document.getElementById('statPct').textContent = Math.round((done/30)*100) + '%';
+}
+
+function renderAll(){
+  renderGraph();
+  renderDay();
+  renderStats();
+}
+
+renderAll();
+</script>
+</body>
+</html>
